@@ -1,11 +1,16 @@
 const Card = require('../models/card');
+const {
+  NOT_FOUND_ERROR_CODE,
+  DEFAULT_ERROR_CODE,
+  INCORRECT_DATA_ERROR_CODE,
+} = require('../utils/errorCodes');
 
 module.exports.getCards = async (req, res) => {
   try {
     const cards = await Card.find({});
     res.send(cards);
   } catch (error) {
-    res.status(500).json({
+    res.status(DEFAULT_ERROR_CODE).json({
       message: 'Не удалось получить карточки',
     });
   }
@@ -19,14 +24,14 @@ module.exports.createCard = async (req, res) => {
     res.send(card);
   } catch (err) {
     if (err.name === 'ValidationError') {
-      res.status(400).json({
+      res.status(INCORRECT_DATA_ERROR_CODE).json({
         message: 'Переданы не валидные данные',
       });
-      return;
+    } else {
+      res.status(DEFAULT_ERROR_CODE).json({
+        message: 'Не удалось создать карточку',
+      });
     }
-    res.status(500).json({
-      message: 'Не удалось создать карточку',
-    });
   }
 };
 
@@ -36,16 +41,17 @@ module.exports.deleteCard = async (req, res) => {
     const response = await Card.findByIdAndDelete(cardId);
     if (!response) {
       res
-        .status(404)
+        .status(NOT_FOUND_ERROR_CODE)
         .send({ message: 'Карточки с указанным ID не существует.' });
       return;
     }
     res.send(response);
   } catch (err) {
     if (err.name === 'CastError') {
-      res.status(400).send({ message: 'Карточка не найдена.' });
+      res.status(INCORRECT_DATA_ERROR_CODE).send({ message: 'Карточка не найдена.' });
+    } else {
+      res.status(DEFAULT_ERROR_CODE).send({ message: 'Не удалось удалить карточку' });
     }
-    res.status(500).send({ message: 'Не удалось удалить карточку' });
   }
 };
 
@@ -57,7 +63,7 @@ module.exports.putLike = async (req, res) => {
       { new: true },
     );
     if (!response) {
-      res.status(404).send({
+      res.status(NOT_FOUND_ERROR_CODE).send({
         message: 'Карточка не найдена',
       });
       return;
@@ -65,14 +71,14 @@ module.exports.putLike = async (req, res) => {
     res.send(response);
   } catch (err) {
     if (err.name === 'CastError') {
-      res.status(400).json({
+      res.status(INCORRECT_DATA_ERROR_CODE).json({
         message: 'Переданы не валидные данные',
       });
-      return;
+    } else {
+      res.status(DEFAULT_ERROR_CODE).json({
+        message: 'Не удалось изменить карточку',
+      });
     }
-    res.status(500).json({
-      message: 'Не удалось изменить карточку',
-    });
   }
 };
 
@@ -84,7 +90,7 @@ module.exports.deleteLike = async (req, res) => {
       { new: true },
     );
     if (!response) {
-      res.status(404).send({
+      res.status(NOT_FOUND_ERROR_CODE).send({
         message: 'Переданы некорректные данные для постановки/снятии лайка.',
       });
       return;
@@ -92,13 +98,13 @@ module.exports.deleteLike = async (req, res) => {
     res.send(response);
   } catch (err) {
     if (err.name === 'CastError') {
-      res.status(400).json({
+      res.status(INCORRECT_DATA_ERROR_CODE).json({
         message: 'Переданы не валидные данные',
       });
-      return;
+    } else {
+      res.status(DEFAULT_ERROR_CODE).json({
+        message: 'Не удалось изменить карточку',
+      });
     }
-    res.status(500).json({
-      message: 'Не удалось изменить карточку',
-    });
   }
 };
