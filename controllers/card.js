@@ -1,22 +1,19 @@
 const Card = require('../models/card');
-const {
-  NOT_FOUND_ERROR_CODE,
-  DEFAULT_ERROR_CODE,
-  INCORRECT_DATA_ERROR_CODE,
-} = require('../utils/errorCodes');
 
-module.exports.getCards = async (req, res) => {
+const BadRequestError = require('../utils/errorClasses/BadRequestError');
+const ForbiddenError = require('../utils/errorClasses/ForbiddenError');
+const NotFoundError = require('../utils/errorClasses/NotFoundError');
+
+module.exports.getCards = async (req, res, next) => {
   try {
     const cards = await Card.find({});
     res.send(cards);
-  } catch (error) {
-    res.status(DEFAULT_ERROR_CODE).json({
-      message: 'Не удалось получить карточки',
-    });
+  } catch (err) {
+    next(err);
   }
 };
 
-module.exports.createCard = async (req, res) => {
+module.exports.createCard = async (req, res, next) => {
   try {
     const { name, link } = req.body;
     const owner = req.user._id;
@@ -24,38 +21,35 @@ module.exports.createCard = async (req, res) => {
     res.send(card);
   } catch (err) {
     if (err.name === 'ValidationError') {
-      res.status(INCORRECT_DATA_ERROR_CODE).json({
-        message: 'Переданы не валидные данные',
-      });
+      next(new BadRequestError(err.message));
     } else {
-      res.status(DEFAULT_ERROR_CODE).json({
-        message: 'Не удалось создать карточку',
-      });
+      next(err);
     }
   }
 };
 
-module.exports.deleteCard = async (req, res) => {
+module.exports.deleteCard = async (req, res, next) => {
   try {
     const { cardId } = req.params;
-    const response = await Card.findByIdAndDelete(cardId);
-    if (!response) {
-      res
-        .status(NOT_FOUND_ERROR_CODE)
-        .send({ message: 'Карточки с указанным ID не существует.' });
-      return;
+    const card = await Card.findById(cardId);
+    if (!card) {
+      throw new NotFoundError('Пост с таким id не найден');
     }
-    res.send(response);
+    if (card.owner.toString() !== req.user._id) {
+      throw new ForbiddenError('Нельзя удалять чужие карточки');
+    }
+    Card.findByIdAndRemove(req.params.cardId);
+    res.send({ message: 'Карточка удалена' });
   } catch (err) {
     if (err.name === 'CastError') {
-      res.status(INCORRECT_DATA_ERROR_CODE).send({ message: 'Карточка не найдена.' });
+      next(new BadRequestError('Некорректный формат id карточки'));
     } else {
-      res.status(DEFAULT_ERROR_CODE).send({ message: 'Не удалось удалить карточку' });
+      next(err);
     }
   }
 };
 
-module.exports.putLike = async (req, res) => {
+module.exports.putLike = async (req, res, next) => {
   try {
     const response = await Card.findByIdAndUpdate(
       req.params.cardId,
@@ -63,26 +57,19 @@ module.exports.putLike = async (req, res) => {
       { new: true },
     );
     if (!response) {
-      res.status(NOT_FOUND_ERROR_CODE).send({
-        message: 'Карточка не найдена',
-      });
-      return;
+      throw new NotFoundError('Карточка с таким id не найдена');
     }
     res.send(response);
   } catch (err) {
     if (err.name === 'CastError') {
-      res.status(INCORRECT_DATA_ERROR_CODE).json({
-        message: 'Переданы не валидные данные',
-      });
+      next(new BadRequestError('Некорректный формат id карточки'));
     } else {
-      res.status(DEFAULT_ERROR_CODE).json({
-        message: 'Не удалось изменить карточку',
-      });
+      next(err);
     }
   }
 };
 
-module.exports.deleteLike = async (req, res) => {
+module.exports.deleteLike = async (req, res, next) => {
   try {
     const response = await Card.findByIdAndUpdate(
       req.params.cardId,
@@ -90,21 +77,14 @@ module.exports.deleteLike = async (req, res) => {
       { new: true },
     );
     if (!response) {
-      res.status(NOT_FOUND_ERROR_CODE).send({
-        message: 'Переданы некорректные данные для постановки/снятии лайка.',
-      });
-      return;
+      throw new NotFoundError('Карточка с таким id не найдена');
     }
     res.send(response);
   } catch (err) {
     if (err.name === 'CastError') {
-      res.status(INCORRECT_DATA_ERROR_CODE).json({
-        message: 'Переданы не валидные данные',
-      });
+      next(new BadRequestError('Некорректный формат id карточки'));
     } else {
-      res.status(DEFAULT_ERROR_CODE).json({
-        message: 'Не удалось изменить карточку',
-      });
+      next(err);
     }
   }
 };
