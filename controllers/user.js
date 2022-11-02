@@ -104,7 +104,6 @@ module.exports.login = async (req, res, next) => {
   }
 };
 
-// eslint-disable-next-line consistent-return
 module.exports.getMe = async (req, res, next) => {
   try {
     const user = await User.findOne({ _id: req.user._id });
@@ -112,4 +111,5 @@ module.exports.getMe = async (req, res, next) => {
   } catch (e) {
     return next(e);
   }
+  return 0;
 };
