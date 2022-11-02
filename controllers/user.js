@@ -23,6 +23,7 @@ module.exports.getUser = async (req, res, next) => {
 
     if (!user) {
       next(new NotFoundError('Пользователь не найден'));
+      return;
     }
 
     res.send(user);
