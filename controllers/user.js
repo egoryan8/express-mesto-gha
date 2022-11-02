@@ -106,7 +106,11 @@ module.exports.login = async (req, res, next) => {
     const { email, password } = req.body;
     const user = await User.handleUnAuthorizedUser(email, password);
     const token = jwt.sign({ _id: user._id }, JWT_SECRET, { expiresIn: '7d' });
-    res.send({ token });
+    res.cookie('token', token, {
+      maxAge: 3600 * 24 * 7,
+      httpOnly: true,
+      sameSite: true,
+    }).send({ email });
   } catch (err) {
     if (err.name === 'ValidationError') {
       next(new BadRequestError('Переданы невалидные данные'));
