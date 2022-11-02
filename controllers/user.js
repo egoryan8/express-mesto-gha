@@ -104,11 +104,15 @@ module.exports.updateAvatar = async (req, res, next) => {
 module.exports.login = async (req, res, next) => {
   try {
     const { email, password } = req.body;
-    const user = await User.checkUser(email, password);
+    const user = await User.handleUnAuthorizedUser(email, password);
     const token = jwt.sign({ _id: user._id }, JWT_SECRET, { expiresIn: '7d' });
     res.send(token);
   } catch (err) {
-    next(err);
+    if (err.name === 'ValidationError') {
+      next(new BadRequestError('Переданы невалидные данные'));
+    } else {
+      next(err);
+    }
   }
 };
 
