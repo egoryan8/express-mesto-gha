@@ -42,25 +42,20 @@ const userSchema = new Schema({
   },
 });
 
-// eslint-disable-next-line func-names, consistent-return
-userSchema.statics.isAuthorize = async function (email, password) {
-  try {
-    const user = await this.findOne({ email }).select('+password');
-    if (!user) {
-      return Promise.reject(new AuthorizedError('Неверный email или пароль'));
-    }
-    const match = await bcrypt.compare(password, user.password);
-
-    if (!match) {
-      return Promise.reject(new AuthorizedError('Неверный email или пароль'));
-    }
-
-    if (user && match) {
-      return user;
-    }
-  } catch (e) {
-    console.log(e);
-  }
+userSchema.statics.handleUnAuthorizedUser = function (email, password) {
+  return this.findOne({ email }).select('+password')
+    .then((user) => {
+      if (!user) {
+        return Promise.reject(new AuthorizedError('Неверный email или пароль'));
+      }
+      return bcrypt.compare(password, user.password)
+        .then((matched) => {
+          if (!matched) {
+            return Promise.reject(new AuthorizedError('Неверный email или пароль'));
+          }
+          return user;
+        });
+    });
 };
 
 module.exports = mongoose.model('user', userSchema);

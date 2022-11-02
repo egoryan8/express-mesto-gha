@@ -44,7 +44,9 @@ module.exports.createUser = async (req, res, next) => {
     const user = await User.create({
       name, about, avatar, email, password: hash,
     });
-    res.send(user);
+    res.send({
+      message: 'Пользователь успешно создан',
+    });
   } catch (err) {
     if (err.code === 11000) {
       next(new ConflictError('Пользователь с таким email уже зарегистрирован'));
