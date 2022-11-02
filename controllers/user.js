@@ -50,7 +50,6 @@ module.exports.createUser = async (req, res, next) => {
       about,
       avatar,
       email,
-      password: hash,
     });
     res.send(user);
   } catch (err) {
