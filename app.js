@@ -1,11 +1,14 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
-const userRoutes = require('./routes/userRouter');
-const cardRoutes = require('./routes/cardRouter');
-const {
-  NOT_FOUND_ERROR_CODE,
-} = require('./utils/errorCodes');
+const { errors } = require('celebrate');
+const userRouter = require('./routes/userRouter');
+const cardRouter = require('./routes/cardRouter');
+const auth = require('./middlewares/auth');
+const error = require('./middlewares/error');
+const { loginValidation, registerValidation } = require('./utils/validation/user');
+const { login, createUser } = require('./controllers/user');
+const NotFoundError = require('./utils/errorClasses/NotFoundError');
 
 const { PORT = 3000 } = process.env;
 
@@ -13,21 +16,19 @@ const app = express();
 app.use(bodyParser.json());
 mongoose.connect('mongodb://localhost:27017/mestodb');
 
-app.use((req, res, next) => {
-  req.user = {
-    _id: '6345a04ed7c49939ecff812a', // вставьте сюда _id созданного в предыдущем пункте пользователя
-  };
+app.post('/signin', loginValidation, login);
+app.post('/signup', registerValidation, createUser);
 
-  next();
+app.use(auth);
+
+app.use('/users', userRouter);
+app.use('/cards', cardRouter);
+app.use('*', () => {
+  throw new NotFoundError('Ничего не найдено. Проверьте URL и метод запроса');
 });
 
-app.use(userRoutes);
-app.use(cardRoutes);
-app.use('*', (req, res) => {
-  res.status(NOT_FOUND_ERROR_CODE).send({
-    message: 'Ничего не найдено, проверьте URL и метод запроса.',
-  });
-});
+app.use(errors());
+app.use(error);
 
 app.listen(PORT, () => {
   console.log(`App listening at port ${PORT}`);
