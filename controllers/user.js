@@ -36,22 +36,28 @@ module.exports.getUser = async (req, res, next) => {
 };
 
 module.exports.createUser = async (req, res, next) => {
+  const {
+    email,
+    password,
+    name,
+    about,
+    avatar,
+  } = req.body;
   try {
-    const {
-      name, about, avatar, email, password,
-    } = req.body;
     const hash = await bcrypt.hash(password, 10);
     const user = await User.create({
-      name, about, avatar, email, password: hash,
+      name,
+      about,
+      avatar,
+      email,
+      password: hash,
     });
-    res.send({
-      message: 'Пользователь успешно создан',
-    });
+    res.send(user);
   } catch (err) {
     if (err.code === 11000) {
-      next(new ConflictError('Пользователь с таким email уже зарегистрирован'));
+      next(new ConflictError('Пользователь с таким email уже существует'));
     } else if (err.name === 'ValidationError') {
-      next(new BadRequestError('Переданы невалидные данные'));
+      next(new BadRequestError(err.message));
     } else {
       next(err);
     }
