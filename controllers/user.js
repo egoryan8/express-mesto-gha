@@ -6,7 +6,7 @@ const BadRequestError = require('../utils/errorClasses/BadRequestError');
 const NotFoundError = require('../utils/errorClasses/NotFoundError');
 const ConflictError = require('../utils/errorClasses/ConflictError');
 
-const { JWT_SECRET } = require('../utils/constants');
+const { NODE_ENV, JWT_SECRET } = process.env;
 
 module.exports.getUsers = async (req, res, next) => {
   try {
@@ -106,7 +106,7 @@ module.exports.login = async (req, res, next) => {
   try {
     const { email, password } = req.body;
     const user = await User.handleUnAuthorizedUser(email, password);
-    const token = jwt.sign({ _id: user._id }, JWT_SECRET, { expiresIn: '7d' });
+    const token = jwt.sign({ _id: user._id }, NODE_ENV === 'production' ? JWT_SECRET : 'dev-secret', { expiresIn: '7d' });
     res.send({ token });
   } catch (err) {
     if (err.name === 'ValidationError') {
