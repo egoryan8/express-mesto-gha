@@ -107,6 +107,7 @@ module.exports.login = async (req, res, next) => {
     const { email, password } = req.body;
     const user = await User.handleUnAuthorizedUser(email, password);
     const token = jwt.sign({ _id: user._id }, NODE_ENV === 'production' ? JWT_SECRET : 'dev-secret', { expiresIn: '7d' });
+    console.log('token: ', token);
     res.send({ token });
   } catch (err) {
     if (err.name === 'ValidationError') {
