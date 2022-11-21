@@ -10,8 +10,8 @@ const {
 const { userIdValidation, userValidation, avatarValidation } = require('../utils/validation/user');
 
 userRouter.get('/', getUsers);
-userRouter.get('/:id', userIdValidation, getUser);
 userRouter.get('/me', getMe);
+userRouter.get('/:id', userIdValidation, getUser);
 userRouter.patch('/me', userValidation, updateUser);
 userRouter.patch('/me/avatar', avatarValidation, updateAvatar);
 
