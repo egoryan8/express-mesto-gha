@@ -4,6 +4,11 @@ const BadRequestError = require('../utils/errorClasses/BadRequestError');
 const ForbiddenError = require('../utils/errorClasses/ForbiddenError');
 const NotFoundError = require('../utils/errorClasses/NotFoundError');
 
+const USER_REF = [
+  { path: 'likes', model: 'user' },
+  { path: 'owner', model: 'user' },
+];
+
 module.exports.getCards = async (req, res, next) => {
   try {
     const cards = await Card.find({});
@@ -49,42 +54,36 @@ module.exports.deleteCard = async (req, res, next) => {
   }
 };
 
-module.exports.putLike = async (req, res, next) => {
+const handleCardLike = async (req, res, next, options) => {
   try {
-    const response = await Card.findByIdAndUpdate(
+    const action = options.addLike ? '$addToSet' : '$pull';
+
+    const updatedCard = await Card.findByIdAndUpdate(
       req.params.cardId,
-      { $addToSet: { likes: req.user._id } },
+      { [action]: { likes: req.user._id } },
       { new: true },
-    );
-    if (!response) {
-      throw new NotFoundError('Карточка с таким id не найдена');
+    ).populate(USER_REF);
+
+    if (!updatedCard) {
+      throw new NotFoundError('Карточка не найдена');
     }
-    res.send(response);
-  } catch (err) {
-    if (err.name === 'CastError') {
-      next(new BadRequestError('Некорректный формат id карточки'));
+
+    res.send({
+      updatedCard,
+    });
+  } catch (e) {
+    if (e.name === 'CastError') {
+      next(new BadRequestError('Переданы невалидные данные'));
     } else {
-      next(err);
+      next(e);
     }
   }
 };
 
-module.exports.deleteLike = async (req, res, next) => {
-  try {
-    const response = await Card.findByIdAndUpdate(
-      req.params.cardId,
-      { $pull: { likes: req.user._id } },
-      { new: true },
-    );
-    if (!response) {
-      throw new NotFoundError('Карточка с таким id не найдена');
-    }
-    res.send(response);
-  } catch (err) {
-    if (err.name === 'CastError') {
-      next(new BadRequestError('Некорректный формат id карточки'));
-    } else {
-      next(err);
-    }
-  }
+module.exports.putLike = (req, res, next) => {
+  handleCardLike(req, res, next, { addLike: true });
+};
+
+module.exports.deleteLike = (req, res, next) => {
+  handleCardLike(req, res, next, { addLike: false });
 };
