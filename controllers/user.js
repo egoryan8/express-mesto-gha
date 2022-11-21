@@ -17,13 +17,13 @@ module.exports.getUsers = async (req, res, next) => {
   }
 };
 
+// eslint-disable-next-line consistent-return
 module.exports.getUser = async (req, res, next) => {
   try {
     const user = await User.findById(req.params.id);
 
     if (!user) {
-      next(new NotFoundError('Пользователь не найден'));
-      return;
+      return next(new NotFoundError('Пользователь не найден'));
     }
 
     res.send(user);
@@ -37,15 +37,12 @@ module.exports.getUser = async (req, res, next) => {
 };
 
 module.exports.createUser = async (req, res, next) => {
-  const {
-    email,
-    password,
-    name,
-    about,
-    avatar,
-  } = req.body;
   try {
+    const {
+      name, about, avatar, email, password,
+    } = req.body;
     const hash = await bcrypt.hash(password, 10);
+    // eslint-disable-next-line no-unused-vars
     const user = await User.create({
       name,
       about,
@@ -53,14 +50,16 @@ module.exports.createUser = async (req, res, next) => {
       email,
       password: hash,
     });
-    res.send(user);
-  } catch (err) {
-    if (err.code === 11000) {
-      next(new ConflictError('Пользователь с таким email уже существует'));
-    } else if (err.name === 'ValidationError') {
-      next(new BadRequestError(err.message));
+    res.send({
+      message: 'Пользователь успешно создан',
+    });
+  } catch (e) {
+    if (e.code === 11000) {
+      next(new ConflictError('Пользователь с данным email уже зарегистрирован'));
+    } else if (e.name === 'CastError') {
+      next(new BadRequestError('Переданы не валидные данные'));
     } else {
-      next(err);
+      next(e);
     }
   }
 };
@@ -117,8 +116,12 @@ module.exports.login = async (req, res, next) => {
   }
 };
 
-module.exports.getMe = (req, res, next) => {
-  User.findOne({ _id: req.user._id })
-    .then((user) => res.send(user))
-    .catch(next);
+// eslint-disable-next-line consistent-return
+module.exports.getMe = async (req, res, next) => {
+  try {
+    const user = await User.findOne({ _id: req.user._id });
+    res.send(user);
+  } catch (e) {
+    return next(e);
+  }
 };

@@ -1,5 +1,5 @@
 const allowedCors = [
-  'https://mesto.fogel.nomoredomains.icu',
+  'https://api.dacorm.nomoredomains.icu',
   'http://mesto.fogel.nomoredomains.icu',
   'https://localhost:3001',
   'http://localhost:3001',

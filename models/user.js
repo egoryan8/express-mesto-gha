@@ -9,18 +9,18 @@ const userSchema = new Schema({
   name: {
     type: String,
     default: 'Жак-Ив Кусто',
-    minlength: [2, 'поле должно содержать минимум 2 символа'],
-    maxlength: [30, 'максимальная длина поля 30 символов'],
+    minlength: [2, 'Минимальная длина поля 2 символа'],
+    maxlength: [30, 'Максимальная длина поля 30 символов'],
   },
   about: {
     type: String,
     default: 'Исследователь',
-    minlength: [2, 'поле должно содержать минимум 2 символа'],
-    maxlength: [30, 'максимальная длина поля 30 символов'],
+    minlength: [2, 'Минимальная длина поля 2 символа'],
+    maxlength: [30, 'Максимальная длина поля 30 символов'],
   },
   avatar: {
-    type: String,
     default: 'https://pictures.s3.yandex.net/resources/jacques-cousteau_1604399756.png',
+    type: String,
     validate: {
       validator: (v) => validator.isURL(v, { protocols: ['http', 'https'], require_protocol: true }),
       message: ({ value }) => `${value} - некоректный адрес URL. Ожидается адрес в формате: http(s)://(www).site.com`,
@@ -32,7 +32,7 @@ const userSchema = new Schema({
     unique: true,
     validate: {
       validator: (v) => validator.isEmail(v),
-      message: ({ value }) => `${value} - некорректный адрес email`,
+      message: () => 'Введен некорректный email адрес',
     },
   },
   password: {
@@ -40,22 +40,27 @@ const userSchema = new Schema({
     required: true,
     select: false,
   },
-}, { toObject: { useProjection: true }, toJSON: { useProjection: true } });
+});
 
-userSchema.statics.handleUnAuthorizedUser = function (email, password) {
-  return this.findOne({ email }).select('+password')
-    .then((user) => {
-      if (!user) {
-        return Promise.reject(new AuthorizedError('Неверный email или пароль'));
-      }
-      return bcrypt.compare(password, user.password)
-        .then((matched) => {
-          if (!matched) {
-            return Promise.reject(new AuthorizedError('Неверный email или пароль'));
-          }
-          return user;
-        });
-    });
+// eslint-disable-next-line func-names, consistent-return
+userSchema.statics.handleUnAuthorizedUser = async function (email, password) {
+  try {
+    const user = await this.findOne({ email }).select('+password');
+    if (!user) {
+      return Promise.reject(new AuthorizedError('Неверная почта или пароль'));
+    }
+    const match = await bcrypt.compare(password, user.password);
+
+    if (!match) {
+      return Promise.reject(new AuthorizedError('Неверная почта или пароль'));
+    }
+
+    if (user && match) {
+      return user;
+    }
+  } catch (e) {
+    console.log(e);
+  }
 };
 
 module.exports = mongoose.model('user', userSchema);
